@@ -7,14 +7,20 @@ ENV HOME="/" \
     OS_NAME="linux" \
     PATH="/opt/bitnami/redis-sentinel/bin:/opt/bitnami/common/bin:$PATH"
 
-COPY prebuildfs /
+COPY ./6.2/debian-10/prebuildfs /
 # Install required system packages and dependencies
-RUN install_packages acl ca-certificates curl gzip libc6 libssl1.1 procps tar
-RUN . /opt/bitnami/scripts/libcomponent.sh && component_unpack "redis-sentinel" "6.2.4-0" --checksum 776abf2d5c496ec77d2c1b968f74c51817c32b9d63f7fa1011491ce98959839e
-RUN . /opt/bitnami/scripts/libcomponent.sh && component_unpack "gosu" "1.13.0-0" --checksum fd7257c2736164d02832dbf72e2c1ed9d875bf3e32f0988520796bc503330129
-RUN chmod g+rwX /opt/bitnami
-
-COPY rootfs /
+RUN install_packages acl wget ca-certificates curl gzip libc6 libssl1.1 procps tar
+RUN if [ `uname -m` = "aarch64" ] ; then \
+       apt-get update && \
+       apt-get install -y redis-sentinel && \
+       wget -o gosu-arm64 https://github.com/tianon/gosu/releases/download/1.13/gosu-arm64 && \
+       cp gosu-arm64 /usr/bin; \
+    else \
+       . /opt/bitnami/scripts/libcomponent.sh && component_unpack "redis-sentinel" "6.2.4-0" --checksum 776abf2d5c496ec77d2c1b968f74c51817c32b9d63f7fa1011491ce98959839e       && \
+       . /opt/bitnami/scripts/libcomponent.sh && component_unpack "gosu" "1.13.0-0" --checksum fd7257c2736164d02832dbf72e2c1ed9d875bf3e32f0988520796bc503330129 && \
+       chmod g+rwX /opt/bitnami; \
+    fi
+COPY ./6.2/debian-10/rootfs /
 RUN /opt/bitnami/scripts/redis-sentinel/postunpack.sh
 ENV BITNAMI_APP_NAME="redis-sentinel" \
     BITNAMI_IMAGE_VERSION="6.2.4-debian-10-r29"
